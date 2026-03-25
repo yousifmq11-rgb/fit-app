@@ -15,15 +15,85 @@
 
     <script type="text/babel">
         // هنا سنضع كود المنصة بالكامل
-        const { useState } = React;
+const { useState, useEffect } = React;
+
+        // مكون الأيقونات (بديل بسيط لـ Lucide)
+        const Icon = ({ name }) => <span style={{fontSize: '1.2rem'}}>📍</span>;
 
         function App() {
+            const [activeTab, setActiveTab] = useState('workout');
+
+            const workoutPlan = [
+                { day: "السبت", focus: "صدر + تراي", exercises: ["بنش برس: 4*10", "تجميع دمبل: 3*12", "ترايسبس دفع: 3*15"] },
+                { day: "الأحد", focus: "ظهر + باي", exercises: ["سحب بار: 4*10", "سحب عالي: 3*12", "بايسبس دمبل: 3*15"] },
+                { day: "الاثنين", focus: "أرجل + بطات", exercises: ["سكوات: 4*10", "دفع أرجل: 3*12", "رفرفة أرجل: 3*15"] },
+                { day: "الثلاثاء", focus: "راحة", exercises: ["استشفاء عضلي - مشي خفيف"] },
+                { day: "الأربعاء", focus: "أكتاف + بطن", exercises: ["ضغط أكتاف: 4*10", "نشر جانبي: 3*15", "طحن بطن: 4*20"] },
+                { day: "الخميس", focus: "جسم كامل (ترميم)", exercises: ["عقلة: 3*Max", "شناو: 3*20", "بلانك: 3 دقائق"] },
+                { day: "الجمعة", focus: "راحة", exercises: ["يوم مفتوح محسوب السعرات"] }
+            ];
+
+            const mealPlan = [
+                { time: "الفطور", meal: "3 بيضات + 50ج شوفان + موزة", cals: 450 },
+                { time: "سناك 1", meal: "قبضة مكسرات + تفاحة", cals: 200 },
+                { time: "الغداء", meal: "200ج صدر دجاج + 150ج رز + سلطة", cals: 600 },
+                { time: "سناك 2", meal: "سكوب بروتين أو علبة زبادي", cals: 150 },
+                { time: "العشاء", meal: "علبة تونا + قطعة خبز أسمر", cals: 350 }
+            ];
+
             return (
-                <div class="p-8 text-center">
-                    <h1 class="text-4xl font-bold text-blue-600 mb-4">أهلاً بك في FitCoach Pro</h1>
-                    <p class="text-xl text-gray-600">المنصة جاهزة للعمل الآن!</p>
-                    <div class="mt-8 p-6 bg-white rounded-xl shadow-lg inline-block">
-                        <p class="text-green-500 font-bold">✅ تم الإطلاق بنجاح</p>
+                <div className="max-w-md mx-auto bg-white min-h-screen shadow-xl pb-20">
+                    {/* Header */}
+                    <div className="bg-slate-900 text-white p-6 rounded-b-3xl shadow-lg">
+                        <h1 className="text-2xl font-bold text-center">FitCoach Pro 🚀</h1>
+                        <p className="text-slate-400 text-center text-sm mt-1">مدربك الذكي في جيبك</p>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-4">
+                        {activeTab === 'workout' ? (
+                            <div className="space-y-4">
+                                <h2 className="text-xl font-bold border-r-4 border-blue-500 pr-2">جدول التمارين الأسبوعي</h2>
+                                {workoutPlan.map((item, index) => (
+                                    <div key={index} className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                        <div className="flex justify-between font-bold text-blue-600">
+                                            <span>{item.day}</span>
+                                            <span className="text-slate-500 text-sm">{item.focus}</span>
+                                        </div>
+                                        <ul className="mt-2 text-sm text-slate-700 list-disc list-inside">
+                                            {item.exercises.map((ex, i) => <li key={i}>{ex}</li>)}
+                                        </ul>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <h2 className="text-xl font-bold border-r-4 border-green-500 pr-2">نظام التغذية اليومي</h2>
+                                {mealPlan.map((item, index) => (
+                                    <div key={index} className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                                        <div>
+                                            <p className="text-xs text-slate-400">{item.time}</p>
+                                            <p className="font-bold text-slate-800">{item.meal}</p>
+                                        </div>
+                                        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
+                                            {item.cals} سعرة
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Navigation Bar */}
+                    <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t flex justify-around p-3 shadow-2xl">
+                        <button onClick={() => setActiveTab('workout')} className={`flex flex-col items-center ${activeTab === 'workout' ? 'text-blue-600' : 'text-slate-400'}`}>
+                            <span>💪</span>
+                            <span className="text-xs">التمارين</span>
+                        </button>
+                        <button onClick={() => setActiveTab('meals')} className={`flex flex-col items-center ${activeTab === 'meals' ? 'text-green-600' : 'text-slate-400'}`}>
+                            <span>🥗</span>
+                            <span className="text-xs">الوجبات</span>
+                        </button>
                     </div>
                 </div>
             );
