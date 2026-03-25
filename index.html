@@ -8,82 +8,61 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script>
-        tailwind.config = {
-            theme: { extend: { colors: { brand: '#FFB800', bgDark: '#0A101C', cardDark: '#131A29' } } }
-        }
-    </script>
+    <style>
+        body { background-color: #0A101C; color: white; font-family: sans-serif; }
+        .card-dark { background: #131A29; border: 1px solid #1e293b; }
+        .brand-yellow { color: #FFB800; }
+    </style>
 </head>
-<body class="bg-bgDark text-white font-sans">
+<body>
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState } = React;
 
         function App() {
-            const [page, setPage] = useState('login'); // تبديل الصفحات
+            const [view, setView] = useState('login'); // login or dashboard
 
-            // بيانات التمارين
-            const workoutPlan = [
-                { day: "السبت", focus: "صدر + تراي", exercises: ["بنش برس: 4*10", "تجميع دمبل: 3*12"] },
-                { day: "الأحد", focus: "ظهر + باي", exercises: ["سحب بار: 4*10", "سحب عالي: 3*12"] },
-                { day: "الاثنين", focus: "أرجل", exercises: ["سكوات: 4*10", "دفع أرجل: 3*12"] }
-            ];
-
-            // --- واجهة الدخول ---
-            if (page === 'login') {
+            if (view === 'login') {
                 return (
-                    <div className="flex flex-col justify-center items-center min-h-screen p-6">
-                        <div className="text-center mb-12 animate-fadeIn">
-                            <h1 className="text-5xl font-black text-white italic">FIT<span className="text-brand">COACH</span><span className="text-xs text-slate-500 not-italic ml-1">PRO</span></h1>
-                            <p className="text-slate-500 text-sm mt-4 italic">منصة التدريب الشخصي — تمارين · تغذية · متابعة</p>
+                    <div className="flex flex-col items-center justify-center min-h-screen p-6">
+                        <div className="text-center mb-12">
+                            <h1 className="text-5xl font-black mb-2">FIT<span className="brand-yellow">COACH</span> PRO</h1>
+                            <p className="text-slate-500">منصة التدريب الشخصي — تمارين · تغذية · متابعة</p>
                         </div>
-                        <div className="grid grid-cols-2 gap-5 w-full max-w-lg mb-8">
-                            <div onClick={() => setPage('dashboard')} className="bg-cardDark border border-slate-800 p-8 rounded-2xl flex flex-col items-center gap-4 hover:border-brand transition-all cursor-pointer shadow-xl group">
-                                <div className="text-5xl group-hover:scale-110 transition">💪</div>
-                                <h2 className="text-xl font-bold text-center">دخول العميل</h2>
+                        <div className="grid grid-cols-2 gap-6 w-full max-w-lg">
+                            <div onClick={() => setView('dashboard')} className="card-dark p-8 rounded-2xl flex flex-col items-center cursor-pointer hover:border-yellow-500 transition shadow-2xl">
+                                <span className="text-6xl mb-4">💪</span>
+                                <h2 className="text-xl font-bold">دخول العميل</h2>
                             </div>
-                            <div className="bg-cardDark border border-slate-800 p-8 rounded-2xl flex flex-col items-center gap-4 opacity-50 cursor-not-allowed">
-                                <div className="text-5xl text-slate-600">🏋️‍♀️</div>
-                                <h2 className="text-xl font-bold text-center text-slate-600">دخول المدرب</h2>
+                            <div onClick={() => setView('dashboard')} className="card-dark p-8 rounded-2xl flex flex-col items-center cursor-pointer hover:border-blue-500 transition shadow-2xl">
+                                <span className="text-6xl mb-4">🏋️‍♀️</span>
+                                <h2 className="text-xl font-bold">دخول المدرب</h2>
                             </div>
                         </div>
-                        <p className="text-slate-600 text-xs italic">⚡️ نسخة تجريبية — اضغط على دخول العميل</p>
                     </div>
                 );
             }
 
-            // --- واجهة المنصة (الداخلية) ---
             return (
-                <div className="max-w-md mx-auto min-h-screen pb-24">
-                    <header className="bg-cardDark p-6 rounded-b-3xl border-b border-brand/20 flex justify-between items-center">
-                        <h1 className="text-xl font-bold text-brand italic">FITCOACH PRO</h1>
-                        <button onClick={() => setPage('login')} className="text-xs bg-slate-800 px-3 py-1 rounded-lg">خروج</button>
-                    </header>
-
-                    <main className="p-4 space-y-6">
-                        <section>
-                            <h2 className="text-lg font-bold mb-4 text-slate-300 border-r-4 border-brand pr-2">جدول التمارين اليومي</h2>
-                            {workoutPlan.map((item, i) => (
-                                <div key={i} className="bg-cardDark mb-3 p-4 rounded-xl border border-slate-800 shadow-md">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="text-brand font-bold">{item.day}</span>
-                                        <span className="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded">{item.focus}</span>
-                                    </div>
-                                    <ul className="text-sm text-slate-300 space-y-1">
-                                        {item.exercises.map((ex, idx) => <li key={idx}>• {ex}</li>)}
-                                    </ul>
-                                </div>
-                            ))}
-                        </section>
-                    </main>
-
-                    {/* Navbar */}
-                    <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-cardDark/90 backdrop-blur-md border-t border-slate-800 p-4 flex justify-around">
-                        <div className="flex flex-col items-center text-brand"><span>🔥</span><span className="text-[10px] mt-1">التمارين</span></div>
-                        <div className="flex flex-col items-center text-slate-500"><span>🥗</span><span className="text-[10px] mt-1">الوجبات</span></div>
-                        <div className="flex flex-col items-center text-slate-500"><span>📊</span><span className="text-[10px] mt-1">القياسات</span></div>
-                    </nav>
+                <div className="max-w-md mx-auto min-h-screen pb-20">
+                    <div className="p-6 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
+                        <h1 className="text-xl font-bold">لوحة المتابعة</h1>
+                        <button onClick={() => setView('login')} className="text-xs bg-slate-800 px-3 py-1 rounded">خروج</button>
+                    </div>
+                    <div className="p-4 space-y-4">
+                        <div className="card-dark p-4 rounded-xl">
+                            <h3 className="brand-yellow font-bold mb-2">تمرين اليوم: صدر + تراي</h3>
+                            <ul className="text-sm text-slate-300 space-y-1">
+                                <li>• بنش برس: 4 جولات</li>
+                                <li>• تجميع دمبل: 3 جولات</li>
+                            </ul>
+                        </div>
+                        <div className="card-dark p-4 rounded-xl">
+                            <h3 className="text-green-500 font-bold mb-2">الوجبة القادمة:</h3>
+                            <p className="text-sm">200ج صدر دجاج + رز</p>
+                        </div>
+                    </div>
                 </div>
             );
         }
