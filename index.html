@@ -3,104 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FitCoach Pro</title>
+    <title>FitCoach Pro - Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-</head>
-<body class="bg-slate-50">
-    <div id="root"></div>
-
-    <script type="text/babel">
-        // هنا سنضع كود المنصة بالكامل
-const { useState, useEffect } = React;
-
-        // مكون الأيقونات (بديل بسيط لـ Lucide)
-        const Icon = ({ name }) => <span style={{fontSize: '1.2rem'}}>📍</span>;
-
-        function App() {
-            const [activeTab, setActiveTab] = useState('workout');
-
-            const workoutPlan = [
-                { day: "السبت", focus: "صدر + تراي", exercises: ["بنش برس: 4*10", "تجميع دمبل: 3*12", "ترايسبس دفع: 3*15"] },
-                { day: "الأحد", focus: "ظهر + باي", exercises: ["سحب بار: 4*10", "سحب عالي: 3*12", "بايسبس دمبل: 3*15"] },
-                { day: "الاثنين", focus: "أرجل + بطات", exercises: ["سكوات: 4*10", "دفع أرجل: 3*12", "رفرفة أرجل: 3*15"] },
-                { day: "الثلاثاء", focus: "راحة", exercises: ["استشفاء عضلي - مشي خفيف"] },
-                { day: "الأربعاء", focus: "أكتاف + بطن", exercises: ["ضغط أكتاف: 4*10", "نشر جانبي: 3*15", "طحن بطن: 4*20"] },
-                { day: "الخميس", focus: "جسم كامل (ترميم)", exercises: ["عقلة: 3*Max", "شناو: 3*20", "بلانك: 3 دقائق"] },
-                { day: "الجمعة", focus: "راحة", exercises: ["يوم مفتوح محسوب السعرات"] }
-            ];
-
-            const mealPlan = [
-                { time: "الفطور", meal: "3 بيضات + 50ج شوفان + موزة", cals: 450 },
-                { time: "سناك 1", meal: "قبضة مكسرات + تفاحة", cals: 200 },
-                { time: "الغداء", meal: "200ج صدر دجاج + 150ج رز + سلطة", cals: 600 },
-                { time: "سناك 2", meal: "سكوب بروتين أو علبة زبادي", cals: 150 },
-                { time: "العشاء", meal: "علبة تونا + قطعة خبز أسمر", cals: 350 }
-            ];
-
-            return (
-                <div className="max-w-md mx-auto bg-white min-h-screen shadow-xl pb-20">
-                    {/* Header */}
-                    <div className="bg-slate-900 text-white p-6 rounded-b-3xl shadow-lg">
-                        <h1 className="text-2xl font-bold text-center">FitCoach Pro 🚀</h1>
-                        <p className="text-slate-400 text-center text-sm mt-1">مدربك الذكي في جيبك</p>
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-4">
-                        {activeTab === 'workout' ? (
-                            <div className="space-y-4">
-                                <h2 className="text-xl font-bold border-r-4 border-blue-500 pr-2">جدول التمارين الأسبوعي</h2>
-                                {workoutPlan.map((item, index) => (
-                                    <div key={index} className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                        <div className="flex justify-between font-bold text-blue-600">
-                                            <span>{item.day}</span>
-                                            <span className="text-slate-500 text-sm">{item.focus}</span>
-                                        </div>
-                                        <ul className="mt-2 text-sm text-slate-700 list-disc list-inside">
-                                            {item.exercises.map((ex, i) => <li key={i}>{ex}</li>)}
-                                        </ul>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                <h2 className="text-xl font-bold border-r-4 border-green-500 pr-2">نظام التغذية اليومي</h2>
-                                {mealPlan.map((item, index) => (
-                                    <div key={index} className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                                        <div>
-                                            <p className="text-xs text-slate-400">{item.time}</p>
-                                            <p className="font-bold text-slate-800">{item.meal}</p>
-                                        </div>
-                                        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
-                                            {item.cals} سعرة
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Navigation Bar */}
-                    <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t flex justify-around p-3 shadow-2xl">
-                        <button onClick={() => setActiveTab('workout')} className={`flex flex-col items-center ${activeTab === 'workout' ? 'text-blue-600' : 'text-slate-400'}`}>
-                            <span>💪</span>
-                            <span className="text-xs">التمارين</span>
-                        </button>
-                        <button onClick={() => setActiveTab('meals')} className={`flex flex-col items-center ${activeTab === 'meals' ? 'text-green-600' : 'text-slate-400'}`}>
-                            <span>🥗</span>
-                            <span className="text-xs">الوجبات</span>
-                        </button>
-                    </div>
-                </div>
-            );
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#FFB800', // اللون الذهبي
+                        bgDark: '#0A101C', // الخلفية المظلمة جداً
+                        cardDark: '#131A29' // لون الكروت
+                    }
+                }
+            }
         }
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
     </script>
+</head>
+<body class="bg-bgDark text-white font-sans flex flex-col justify-center items-center min-h-screen p-6">
+
+    <button class="fixed top-6 right-6 text-sm text-slate-500 border border-slate-700 px-4 py-1.5 rounded-xl hover:bg-cardDark transition">
+        English
+    </button>
+
+    <div class="text-center mb-12 flex flex-col items-center">
+        <div class="flex items-center gap-2 mb-1">
+            <h1 class="text-5xl font-black text-white">FIT<span class="text-brand">COACH</span></h1>
+            <span class="text-xs text-slate-500 mt-5">PRO</span>
+        </div>
+        <p class="text-slate-500 text-sm mt-2">منصة التدريب الشخصي — تمارين · تغذية · متابعة</p>
+    </div>
+
+    <div class="grid grid-cols-2 gap-5 w-full max-w-lg mb-12">
+        
+        <a href="#" class="bg-cardDark border border-slate-800 p-8 rounded-2xl flex flex-col items-center gap-4 hover:border-brand/40 hover:scale-[1.03] transition-all cursor-pointer shadow-lg group">
+            <div class="text-6xl group-hover:animate-bounce">💪</div>
+            <h2 class="text-xl font-bold text-center mt-3">دخول العميل</h2>
+        </a>
+
+        <a href="#" class="bg-cardDark border border-slate-800 p-8 rounded-2xl flex flex-col items-center gap-4 hover:border-blue-400/40 hover:scale-[1.03] transition-all cursor-pointer shadow-lg group">
+            <div class="text-6xl group-hover:animate-bounce">🏋️‍♀️</div>
+            <h2 class="text-xl font-bold text-center mt-3">دخول المدرب</h2>
+        </a>
+    </div>
+
+    <div class="text-center text-slate-600 text-sm flex items-center gap-2 opacity-60">
+        <span>⚡️</span>
+        <p>نسخة تجريبية — اضغط للدخول</p>
+    </div>
+
 </body>
 </html>
