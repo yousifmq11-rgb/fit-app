@@ -1,55 +1,581 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FitCoach Pro - Login</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: '#FFB800', // اللون الذهبي
-                        bgDark: '#0A101C', // الخلفية المظلمة جداً
-                        cardDark: '#131A29' // لون الكروت
-                    }
-                }
-            }
-        }
-    </script>
-</head>
-<body class="bg-bgDark text-white font-sans flex flex-col justify-center items-center min-h-screen p-6">
+import { useState, useEffect, useRef } from "react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-    <button class="fixed top-6 right-6 text-sm text-slate-500 border border-slate-700 px-4 py-1.5 rounded-xl hover:bg-cardDark transition">
-        English
-    </button>
+const T = {
+  bg:"#07090C", surf:"#0D1520", card:"#121C2A", cardHov:"#19273A",
+  border:"#1D2D3E", gold:"#E9A620", goldBg:"rgba(233,166,32,0.12)",
+  green:"#2ECC71", red:"#E74C3C", blue:"#3B8BEB", purple:"#9B6BF2",
+  text:"#EDF2F7", sub:"#7A94AF", dim:"#3A5068",
+};
+const FF = "'Cairo','Tajawal',sans-serif";
+const DAYS_AR=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+const DAYS_EN=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const MONTHS_AR=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
 
-    <div class="text-center mb-12 flex flex-col items-center">
-        <div class="flex items-center gap-2 mb-1">
-            <h1 class="text-5xl font-black text-white">FIT<span class="text-brand">COACH</span></h1>
-            <span class="text-xs text-slate-500 mt-5">PRO</span>
+function vidSrc(url){
+  if(!url) return null;
+  if(url.includes("youtube.com/shorts")){const id=url.split("/shorts/")[1]?.split("?")[0];return{type:"yt",src:`https://www.youtube.com/embed/${id}?autoplay=1`};}
+  if(url.includes("youtu.be")||url.includes("youtube.com/watch")){const id=url.includes("youtu.be")?url.split("youtu.be/")[1]?.split("?")[0]:new URL(url).searchParams.get("v");return{type:"yt",src:`https://www.youtube.com/embed/${id}?autoplay=1`};}
+  if(url.includes("drive.google.com")){const m=url.match(/\/d\/([\w-]+)\//);if(m)return{type:"drive",src:`https://drive.google.com/file/d/${m[1]}/preview`};}
+  if(url.includes("instagram.com"))return{type:"link",src:url};
+  return null;
+}
+
+const SCHEDULE=[
+  {label:"دفع — صدر · كتف · تراي",labelEn:"Push Day",color:T.gold,type:"push"},
+  {label:"شد — ظهر · بايسبس",     labelEn:"Pull Day",color:T.blue,type:"pull"},
+  {label:"راحة",                   labelEn:"Rest Day",color:T.dim, type:"rest"},
+  {label:"أرجل",                   labelEn:"Leg Day", color:T.green,type:"legs"},
+  {label:"جلسة عليا",             labelEn:"Upper Day",color:T.purple,type:"upper"},
+  {label:"راحة",                   labelEn:"Rest Day",color:T.dim, type:"rest"},
+  {label:"راحة",                   labelEn:"Rest Day",color:T.dim, type:"rest"},
+];
+
+const EXERCISES=[
+  [{name:"بنش بريس",nameEn:"Bench Press",sets:2,reps:"6–8",rest:"3-5 min",muscle:"صدر",url:"https://drive.google.com/file/d/1rDA22o-UfXzaGG2sxcPe5cIrbas7kr1-/view?usp=sharing"},
+   {name:"دمبل بريس للكتف",nameEn:"Shoulder DB Press",sets:2,reps:"8–10",rest:"2 min",muscle:"كتف",url:"https://drive.google.com/file/d/13gmpS50zpWFydMxCp3hohBW7QKt7DoxW/view?usp=sharing"},
+   {name:"فلاي صدر مكينة",nameEn:"Chest Fly Machine",sets:2,reps:"12–15",rest:"1.5-2 min",muscle:"صدر",url:"https://drive.google.com/file/d/1V5J1LH_A8STATQsjK1xbqkPANOSNlJCk/view?usp=sharing"},
+   {name:"تراي سبس كيبل أوفرهيد",nameEn:"Cable Overhead Triceps Ext.",sets:2,reps:"8–10",rest:"1.5-2 min",muscle:"تراي سبس",url:"https://drive.google.com/file/d/18rDC2iGZFQfr9H6f2mYV63DO2BNnxJ9N/view?usp=sharing"}],
+  [{name:"لات بولداون",nameEn:"Lat Pull Down",sets:2,reps:"8–10",rest:"2 min",muscle:"ظهر",url:"https://drive.google.com/file/d/17x4vGB2m4jHreZDwx0GBh0FWnmiKQcBE/view?usp=sharing"},
+   {name:"تي بار رووينق",nameEn:"T-Bar Row",sets:2,reps:"8–10",rest:"2 min",muscle:"ظهر وسط",url:"https://drive.google.com/file/d/1nRGHirlLHYtU_lZhrhwIDi6u3o5WfMID/view?usp=sharing"},
+   {name:"ريار دلت كيبل",nameEn:"Rear Delt Cable",sets:2,reps:"12–15",rest:"1.5-2 min",muscle:"كتف خلفي",url:"https://www.youtube.com/shorts/PZq3CJGLj6M"},
+   {name:"بايسبس بار كيرل",nameEn:"Biceps Bar Curl",sets:2,reps:"10–12",rest:"1.5-2 min",muscle:"بايسبس",url:"https://drive.google.com/file/d/1nyndSmsa8fwcJuKjdAbswJ9iyTbIOUWG/view?usp=share_link"}],
+  [],
+  [{name:"سكوات",nameEn:"Squat",sets:2,reps:"6–8",rest:"3 min",muscle:"أرجل كاملة",url:"https://drive.google.com/file/d/1cT8TkKB7ar2i4N7OeIsoamECW01EL2P5/view?usp=sharing"},
+   {name:"كالف ريز",nameEn:"Calf Raise",sets:2,reps:"10–12",rest:"1.5 min",muscle:"ساق",url:"https://drive.google.com/file/d/1H7aI735JIuDx1XzdqAgG1uKPZhuAbMa2/view?usp=sharing"},
+   {name:"ليغ بريس",nameEn:"Leg Press",sets:2,reps:"8–10",rest:"2 min",muscle:"أفخاذ",url:"https://drive.google.com/file/d/1H7aI735JIuDx1XzdqAgG1uKPZhuAbMa2/view?usp=sharing"},
+   {name:"ليغ كيرل",nameEn:"Leg Curl",sets:2,reps:"12–15",rest:"2 min",muscle:"فخذ خلفي",url:"https://drive.google.com/file/d/1H7aI735JIuDx1XzdqAgG1uKPZhuAbMa2/view?usp=sharing"},
+   {name:"ليغ إكستنشن",nameEn:"Leg Extension",sets:2,reps:"12–15",rest:"2 min",muscle:"فخذ أمامي",url:"https://drive.google.com/file/d/1uUzx-Uc6Cc5o1KUmyZeS7Mgm9ix7xrYl/view?usp=sharing"}],
+  [{name:"إنكلاين دمبل بريس",nameEn:"Incline DB Press",sets:2,reps:"8–10",rest:"2 min",muscle:"صدر علوي",url:"https://drive.google.com/file/d/1hU2lX7XQg4cVWCmLlCXvIPPp8LUMNmzk/view?usp=sharing"},
+   {name:"ديبز",nameEn:"Dips",sets:2,reps:"8–10",rest:"2 min",muscle:"صدر / تراي",url:"https://www.youtube.com/shorts/2NOglxsG1wE"},
+   {name:"تراي بشداون كيبل",nameEn:"Tri Push Down Cable",sets:2,reps:"8–10",rest:"1.5-2 min",muscle:"تراي سبس",url:"https://drive.google.com/file/d/1E1FxU_6mieXLqehaEnHfMcJuN3oVx_9F/view?usp=sharing"},
+   {name:"تمارين البطن",nameEn:"Abs / Core",sets:2,reps:"12–15",rest:"1.5 min",muscle:"بطن",url:"https://www.youtube.com/shorts/JzaIPJ8GV_w"}],
+  [],
+  [],
+];
+
+const MEAL_PLANS={
+  "فطور":{icon:"🥣",options:[
+    {name:"شوفان + بروتين + فستق",nameEn:"Oats + Protein + Nuts",cal:565,p:40,c:54,f:21,
+     items:["شوفان 82g","بروتين 30g","مكسرات فستق 26g"],
+     url:"https://drive.google.com/file/d/1fNrBnhkm8M_v2YNiJIuSguKkxGKZECHr/view?usp=sharing"},
+    {name:"توست أسمر + بيض + تفاح",nameEn:"Brown Toast + Eggs + Apple",cal:567,p:35,c:65,f:23,
+     items:["توست أسمر 90g","بيض 4 حبات","طماطم 200غ","مكسرات 12g","تفاح 120g"],
+     url:"https://drive.google.com/file/d/14FIOTN8vNv7hm9jIGQqV7NfJzYw7UnZM/view?usp=sharing"},
+  ]},
+  "غداء":{icon:"🍗",options:[
+    {name:"معكرونة + دجاج + بروكلي",nameEn:"Pasta + Chicken + Broccoli",cal:732,p:41,c:88,f:24,
+     items:["معكرونة 67g (قبل الطبخ)","دجاج 100g (بعد الطبخ)","مكسرات 46g","طماطم 50g","فلفل 50g","بروكلي 300g"],
+     url:"https://drive.google.com/file/d/1NdhbA8Mgh-FcofC_oi3KFu_0gf_xseuX/view?usp=sharing"},
+    {name:"برغل + دجاج + بروكلي",nameEn:"Bulgur + Chicken + Broccoli",cal:733,p:34,c:102,f:21,
+     items:["برغل 72غ","دجاج 78غ (بعد الطبخ)","طماطم 100غ","فلفل 100غ","كرفس ورشاد ونعناع","بروكلي 300g","مكسرات 36g"],
+     url:"https://drive.google.com/file/d/1bSc5pkrQ5f5YlwkmaJpvgDTpssNOqQkW/view?usp=sharing"},
+  ]},
+  "عشاء":{icon:"🥔",options:[
+    {name:"بطاطا + دجاج + بروكلي",nameEn:"Potato + Chicken + Broccoli",cal:719,p:46,c:82,f:23,
+     items:["بطاطا 273g (قبل الطبخ)","دجاج 130g (بعد الطبخ)","طماطم 50g","فلفل 50g","زيت زيتون 10g","مكسرات 26g","بروكلي 300g"],
+     url:"https://drive.google.com/file/d/1bSc5pkrQ5f5YlwkmaJpvgDTpssNOqQkW/view?usp=sharing"},
+    {name:"برغل + دجاج + بروكلي",nameEn:"Bulgur + Chicken (Dinner)",cal:717,p:34,c:98,f:21,
+     items:["برغل 67غ","دجاج 78غ (بعد الطبخ)","طماطم 100غ","فلفل 100غ","كرفس ورشاد ونعناع","بروكلي 300g","مكسرات 36g"],
+     url:"https://drive.google.com/file/d/1bSc5pkrQ5f5YlwkmaJpvgDTpssNOqQkW/view?usp=sharing"},
+  ]},
+  "تحلية":{icon:"🍌",options:[
+    {name:"بروتين باودر + موز",nameEn:"Protein Powder + Banana",cal:146,p:10,c:22,f:2,
+     items:["بروتين باودر 14غ","موز 100g"],
+     url:"https://drive.google.com/file/d/1O0LSuZ9fKzx39EguUhItsQZCSVuiBKP3/view?usp=sharing"},
+  ]},
+};
+
+const CLIENTS=[
+  {id:1,name:"أحمد محمد",nameEn:"Ahmed Mohamed",goal:"خسارة وزن",goalEn:"Weight Loss",start:92,current:84.8,target:78,avatar:"أ",color:T.gold,weeks:11},
+  {id:2,name:"سارة العلي",nameEn:"Sara Al-Ali",goal:"بناء عضل",goalEn:"Muscle Gain",start:58,current:61.2,target:65,avatar:"س",color:T.purple,weeks:6},
+  {id:3,name:"خالد الرشيد",nameEn:"Khalid Al-Rashid",goal:"لياقة عامة",goalEn:"General Fitness",start:80,current:77,target:72,avatar:"خ",color:T.green,weeks:8},
+];
+
+const PROGRESS_INIT=[
+  {date:"1 يناير",weight:92,chest:105,waist:88},
+  {date:"15 يناير",weight:90.5,chest:104,waist:86},
+  {date:"1 فبراير",weight:89,chest:103,waist:84},
+  {date:"15 فبراير",weight:87.5,chest:102,waist:82},
+  {date:"1 مارس",weight:86,chest:101,waist:81},
+  {date:"15 مارس",weight:84.8,chest:100,waist:79},
+];
+
+const INIT_MSGS=[
+  {from:"coach",text:"أهلاً! كيف حال التمرين اليوم؟ 💪",time:"9:00 ص"},
+  {from:"client",text:"الحمد لله أنهيت كل تمارين الصدر 😅",time:"9:15 ص"},
+  {from:"coach",text:"ممتاز! لا تنسى البروتين بعد التمرين مباشرة ✅",time:"9:17 ص"},
+];
+
+const OB=(active=false,col=T.gold)=>({
+  background:active?`${col}18`:"transparent",border:`1px solid ${active?col:T.border}`,
+  color:active?col:T.sub,padding:"6px 14px",borderRadius:8,cursor:"pointer",
+  fontSize:13,fontWeight:active?700:400,fontFamily:FF,transition:"all 0.15s",
+});
+
+const WA_NUM="9647800000000";
+
+export default function App(){
+  const [view,setView]=useState("login");
+  const [client,setClient]=useState(null);
+  const [tab,setTab]=useState("workout");
+  const [day,setDay]=useState(0);
+  const [video,setVideo]=useState(null);
+  const [lang,setLang]=useState("ar");
+  const [progress,setProgress]=useState(PROGRESS_INIT);
+  const [form,setForm]=useState({weight:"",chest:"",waist:""});
+  const [msgs,setMsgs]=useState(INIT_MSGS);
+  const [msgIn,setMsgIn]=useState("");
+  const [mealOpts,setMealOpts]=useState({فطور:0,غداء:0,عشاء:0,تحلية:0});
+  const chatEnd=useRef(null);
+  const ar=lang==="ar", dir=ar?"rtl":"ltr";
+
+  useEffect(()=>{
+    const l=document.createElement("link");
+    l.href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap";
+    l.rel="stylesheet"; document.head.appendChild(l);
+  },[]);
+
+  useEffect(()=>{ chatEnd.current?.scrollIntoView({behavior:"smooth"}); },[msgs,tab]);
+
+  const sendMsg=()=>{
+    if(!msgIn.trim()) return;
+    const d=new Date(), t=`${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`;
+    setMsgs(p=>[...p,{from:"client",text:msgIn.trim(),time:t}]);
+    setMsgIn("");
+    setTimeout(()=>setMsgs(p=>[...p,{from:"coach",text:"تمام! استمر، أنت رائع 💪",time:t}]),1400);
+  };
+
+  const totalCal=Object.keys(MEAL_PLANS).reduce((s,k)=>s+(MEAL_PLANS[k].options[mealOpts[k]||0]?.cal||0),0);
+  const totalP=Object.keys(MEAL_PLANS).reduce((s,k)=>s+(MEAL_PLANS[k].options[mealOpts[k]||0]?.p||0),0);
+  const totalC=Object.keys(MEAL_PLANS).reduce((s,k)=>s+(MEAL_PLANS[k].options[mealOpts[k]||0]?.c||0),0);
+  const totalF=Object.keys(MEAL_PLANS).reduce((s,k)=>s+(MEAL_PLANS[k].options[mealOpts[k]||0]?.f||0),0);
+
+  // VIDEO MODAL
+  const VideoModal=()=>{
+    if(!video) return null;
+    const vs=vidSrc(video.url);
+    return(
+      <div onClick={()=>setVideo(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+        <div onClick={e=>e.stopPropagation()} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:"hidden",width:"100%",maxWidth:720,fontFamily:FF}}>
+          <div style={{padding:"13px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${T.border}`}}>
+            <div>
+              <div style={{fontWeight:800,fontSize:15}}>{ar?video.name:video.nameEn}</div>
+              {video.muscle&&<div style={{fontSize:11,color:T.sub,marginTop:2}}>{video.muscle}</div>}
+            </div>
+            <button onClick={()=>setVideo(null)} style={{background:"transparent",border:"none",color:T.sub,fontSize:26,cursor:"pointer",lineHeight:1,padding:"0 6px"}}>×</button>
+          </div>
+          {vs?.type==="link"?(
+            <div style={{padding:28,textAlign:"center"}}>
+              <div style={{fontSize:40,marginBottom:10}}>📱</div>
+              <div style={{color:T.sub,marginBottom:14,fontSize:14}}>{ar?"هذا الفيديو على إنستغرام":"This video is on Instagram"}</div>
+              <a href={vs.src} target="_blank" rel="noreferrer" style={{background:T.gold,color:"#000",borderRadius:8,padding:"9px 22px",fontFamily:FF,fontWeight:800,fontSize:14,textDecoration:"none"}}>
+                {ar?"فتح في إنستغرام ↗":"Open in Instagram ↗"}
+              </a>
+            </div>
+          ):vs?(
+            <iframe width="100%" height={window.innerWidth<600?220:370} src={vs.src} title={video.nameEn||video.name}
+              frameBorder="0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowFullScreen style={{display:"block"}}/>
+          ):(
+            <div style={{padding:28,textAlign:"center",color:T.sub,fontSize:14}}>{ar?"لا يوجد فيديو":"No video available"}</div>
+          )}
+          {video.sets&&(
+            <div style={{padding:"12px 18px",display:"flex",gap:22,flexWrap:"wrap",fontFamily:FF,borderTop:`1px solid ${T.border}`}}>
+              {[[ar?"مجموعات":"Sets",video.sets,T.gold],[ar?"تكرارات":"Reps",video.reps,T.text],[ar?"راحة":"Rest",video.rest,T.sub]].map(([l,v,c],i)=>(
+                <div key={i}><span style={{color:T.dim,fontSize:12}}>{l}: </span><span style={{fontWeight:800,color:c}}>{v}</span></div>
+              ))}
+            </div>
+          )}
         </div>
-        <p class="text-slate-500 text-sm mt-2">منصة التدريب الشخصي — تمارين · تغذية · متابعة</p>
+      </div>
+    );
+  };
+
+  // CONTACT STRIP
+  const ContactStrip=()=>(
+    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+      <a href={`https://wa.me/${WA_NUM}`} target="_blank" rel="noreferrer"
+        style={{background:"rgba(37,211,102,0.15)",color:"#25D366",border:"1px solid rgba(37,211,102,0.35)",borderRadius:8,padding:"7px 14px",fontSize:13,fontWeight:700,fontFamily:FF,textDecoration:"none",display:"flex",alignItems:"center",gap:5}}>
+        📲 {ar?"واتساب المدرب":"Coach WhatsApp"}
+      </a>
+      <a href={`viber://chat?number=${WA_NUM}`} target="_blank" rel="noreferrer"
+        style={{background:"rgba(115,96,242,0.15)",color:"#9B6BF2",border:"1px solid rgba(115,96,242,0.35)",borderRadius:8,padding:"7px 14px",fontSize:13,fontWeight:700,fontFamily:FF,textDecoration:"none",display:"flex",alignItems:"center",gap:5}}>
+        📳 {ar?"فايبر":"Viber"}
+      </a>
     </div>
+  );
 
-    <div class="grid grid-cols-2 gap-5 w-full max-w-lg mb-12">
-        
-        <a href="#" class="bg-cardDark border border-slate-800 p-8 rounded-2xl flex flex-col items-center gap-4 hover:border-brand/40 hover:scale-[1.03] transition-all cursor-pointer shadow-lg group">
-            <div class="text-6xl group-hover:animate-bounce">💪</div>
-            <h2 class="text-xl font-bold text-center mt-3">دخول العميل</h2>
-        </a>
-
-        <a href="#" class="bg-cardDark border border-slate-800 p-8 rounded-2xl flex flex-col items-center gap-4 hover:border-blue-400/40 hover:scale-[1.03] transition-all cursor-pointer shadow-lg group">
-            <div class="text-6xl group-hover:animate-bounce">🏋️‍♀️</div>
-            <h2 class="text-xl font-bold text-center mt-3">دخول المدرب</h2>
-        </a>
+  // ── LOGIN ──
+  if(view==="login") return(
+    <div style={{direction:dir,fontFamily:FF,color:T.text,minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,background:`radial-gradient(ellipse at 50% 0%,#0C1E33,${T.bg} 65%)`}}>
+      <button onClick={()=>setLang(ar?"en":"ar")} style={{...OB(),position:"fixed",top:16,right:16,fontSize:12}}>{ar?"English":"عربي"}</button>
+      <div style={{textAlign:"center",marginBottom:46}}>
+        <div style={{fontSize:44,fontWeight:900,letterSpacing:"-1px",marginBottom:8}}><span style={{color:T.gold}}>FIT</span><span style={{color:T.text}}>COACH</span><span style={{color:T.dim,fontSize:12,fontWeight:400,marginLeft:8}}>PRO</span></div>
+        <div style={{color:T.sub,fontSize:14}}>{ar?"منصة التدريب الشخصي — تمارين · تغذية · متابعة":"Personal Training Platform — Workouts · Nutrition · Tracking"}</div>
+      </div>
+      <div style={{display:"flex",gap:18,flexWrap:"wrap",justifyContent:"center"}}>
+        {[{role:"coach",icon:"🏋️",label:ar?"دخول المدرب":"Coach Login"},{role:"client",icon:"💪",label:ar?"دخول العميل":"Client Login"}].map(r=>(
+          <div key={r.role}
+            onClick={()=>{if(r.role==="coach"){setView("coach");}else{setClient(CLIENTS[0]);setView("client");setTab("workout");setProgress(PROGRESS_INIT);setMsgs(INIT_MSGS);}}}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor=T.gold;e.currentTarget.style.background=T.cardHov;}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor=T.border;e.currentTarget.style.background=T.card;}}
+            style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:18,padding:"38px 44px",cursor:"pointer",textAlign:"center",width:180,transition:"all 0.2s"}}>
+            <div style={{fontSize:42,marginBottom:12}}>{r.icon}</div>
+            <div style={{fontSize:16,fontWeight:900}}>{r.label}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{marginTop:32,fontSize:12,color:T.dim}}>⚡ {ar?"نسخة تجريبية — اضغط للدخول":"Demo — click to enter"}</div>
     </div>
+  );
 
-    <div class="text-center text-slate-600 text-sm flex items-center gap-2 opacity-60">
-        <span>⚡️</span>
-        <p>نسخة تجريبية — اضغط للدخول</p>
+  // ── COACH ──
+  if(view==="coach") return(
+    <div style={{direction:dir,fontFamily:FF,color:T.text,minHeight:"100vh",background:T.bg}}>
+      <nav style={{background:T.surf,borderBottom:`1px solid ${T.border}`,padding:"13px 22px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:50}}>
+        <div style={{fontWeight:900,fontSize:20}}><span style={{color:T.gold}}>FIT</span>COACH</div>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>setLang(ar?"en":"ar")} style={OB()}>{ar?"EN":"عربي"}</button>
+          <button onClick={()=>setView("login")} style={OB()}>{ar?"خروج":"Logout"}</button>
+        </div>
+      </nav>
+      <div style={{padding:"26px 22px"}}>
+        <h1 style={{margin:"0 0 4px",fontSize:23,fontWeight:900}}>{ar?"لوحة تحكم المدرب":"Coach Dashboard"}</h1>
+        <p style={{margin:"0 0 26px",color:T.sub,fontSize:13}}>{ar?"إدارة عملائك وخططهم":"Manage your clients"}</p>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:11,marginBottom:26}}>
+          {[[ar?"العملاء":"Clients","3","👥"],[ar?"نشطون":"Active","3","✅"],[ar?"وزن مفقود":"Lost","18.7 kg","📉"],[ar?"تقدم متوسط":"Avg Progress","71%","🎯"]].map(([l,v,ic],i)=>(
+            <div key={i} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"15px 13px"}}>
+              <div style={{fontSize:20,marginBottom:5}}>{ic}</div>
+              <div style={{fontSize:21,fontWeight:900,color:T.gold}}>{v}</div>
+              <div style={{fontSize:11,color:T.sub,marginTop:2}}>{l}</div>
+            </div>
+          ))}
+        </div>
+        <h2 style={{fontSize:13,fontWeight:700,color:T.sub,margin:"0 0 12px"}}>{ar?"العملاء":"Clients"}</h2>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(275px,1fr))",gap:13}}>
+          {CLIENTS.map(c=>{
+            const done=Math.abs(c.current-c.start),total=Math.abs(c.target-c.start),pct=Math.min(100,Math.round((done/total)*100));
+            return(
+              <div key={c.id}
+                onClick={()=>{setClient(c);setView("client");setTab("workout");setProgress(PROGRESS_INIT);setMsgs(INIT_MSGS);}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor=c.color;e.currentTarget.style.transform="translateY(-2px)";}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor=T.border;e.currentTarget.style.transform="none";}}
+                style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:13,padding:19,cursor:"pointer",transition:"all 0.2s"}}>
+                <div style={{display:"flex",gap:11,alignItems:"center",marginBottom:13}}>
+                  <div style={{width:44,height:44,borderRadius:"50%",background:c.color,color:"#000",display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,fontWeight:900,flexShrink:0}}>{c.avatar}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:800,fontSize:14}}>{ar?c.name:c.nameEn}</div>
+                    <div style={{fontSize:11,color:T.sub,marginTop:2}}>{ar?c.goal:c.goalEn} · {c.weeks} {ar?"أسبوع":"wk"}</div>
+                  </div>
+                  <span style={{background:`${c.color}18`,color:c.color,fontSize:12,fontWeight:800,padding:"3px 9px",borderRadius:20,border:`1px solid ${c.color}40`}}>{pct}%</span>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-around",marginBottom:11,textAlign:"center"}}>
+                  {[[ar?"البداية":"Start",c.start,T.text],[ar?"الحالي":"Now",c.current,T.gold],[ar?"الهدف":"Target",c.target,T.green]].map(([l,v,col],i)=>(
+                    <div key={i}><div style={{fontSize:17,fontWeight:900,color:col}}>{v}</div><div style={{fontSize:10,color:T.dim}}>{l}</div></div>
+                  ))}
+                </div>
+                <div style={{height:4,background:T.border,borderRadius:99,overflow:"hidden",marginBottom:11}}><div style={{height:"100%",width:`${pct}%`,background:c.color,borderRadius:99}}/></div>
+                <div style={{background:`${c.color}10`,border:`1px solid ${c.color}30`,color:c.color,borderRadius:7,padding:7,textAlign:"center",fontSize:12,fontWeight:700}}>
+                  {ar?"عرض الخطة الكاملة ←":"View Full Plan →"}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
+  );
 
-</body>
-</html>
+  // ── CLIENT ──
+  const latest=progress[progress.length-1];
+  const dayExs=EXERCISES[day]||[];
+
+  return(
+    <div style={{direction:dir,fontFamily:FF,color:T.text,minHeight:"100vh",background:T.bg}}>
+      <VideoModal/>
+      <nav style={{background:T.surf,borderBottom:`1px solid ${T.border}`,padding:"11px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:100,flexWrap:"wrap",gap:8}}>
+        <div style={{display:"flex",alignItems:"center",gap:9}}>
+          <span style={{fontWeight:900,fontSize:19}}><span style={{color:T.gold}}>FIT</span>COACH</span>
+          <span style={{color:T.dim,fontSize:18}}>|</span>
+          <span style={{color:T.sub,fontSize:12}}>{ar?client?.name:client?.nameEn}</span>
+        </div>
+        <div style={{display:"flex",gap:7,flexWrap:"wrap",alignItems:"center"}}>
+          <a href={`https://wa.me/${WA_NUM}`} target="_blank" rel="noreferrer"
+            style={{background:"rgba(37,211,102,0.15)",color:"#25D366",border:"1px solid rgba(37,211,102,0.3)",borderRadius:7,padding:"6px 12px",fontSize:12,fontWeight:700,fontFamily:FF,textDecoration:"none"}}>
+            📲 {ar?"واتساب":"WhatsApp"}
+          </a>
+          <a href={`viber://chat?number=${WA_NUM}`} target="_blank" rel="noreferrer"
+            style={{background:"rgba(115,96,242,0.15)",color:"#9B6BF2",border:"1px solid rgba(115,96,242,0.3)",borderRadius:7,padding:"6px 12px",fontSize:12,fontWeight:700,fontFamily:FF,textDecoration:"none"}}>
+            📳 {ar?"فايبر":"Viber"}
+          </a>
+          <button onClick={()=>setLang(ar?"en":"ar")} style={OB()}>{ar?"EN":"عربي"}</button>
+          <button onClick={()=>setView("coach")} style={OB()}>{ar?"← المدرب":"← Coach"}</button>
+        </div>
+      </nav>
+
+      {/* Hero */}
+      <div style={{background:`linear-gradient(180deg,#0C1D30,${T.bg})`,borderBottom:`1px solid ${T.border}`,padding:"18px 20px 0"}}>
+        <div style={{display:"flex",gap:13,alignItems:"center",marginBottom:16,flexWrap:"wrap"}}>
+          <div style={{width:48,height:48,borderRadius:"50%",background:T.gold,color:"#000",display:"flex",alignItems:"center",justifyContent:"center",fontSize:21,fontWeight:900,flexShrink:0}}>{client?.avatar}</div>
+          <div>
+            <div style={{fontSize:17,fontWeight:900}}>{ar?client?.name:client?.nameEn}</div>
+            <div style={{fontSize:12,color:T.sub,marginTop:2}}>{ar?client?.goal:client?.goalEn} · {ar?"أسبوع":"Week"} {client?.weeks}</div>
+          </div>
+          <div style={{display:"flex",gap:20,marginRight:"auto",marginLeft:"auto",flexWrap:"wrap"}}>
+            {[[ar?"الحالي":"Now",`${latest.weight} kg`,T.gold],[ar?"مفقود":"Lost",`${(client?.start-latest.weight).toFixed(1)} kg`,T.green],[ar?"متبقي":"Left",`${Math.max(0,latest.weight-client?.target).toFixed(1)} kg`,T.sub]].map(([l,v,c],i)=>(
+              <div key={i} style={{textAlign:"center"}}><div style={{fontSize:16,fontWeight:900,color:c}}>{v}</div><div style={{fontSize:10,color:T.dim}}>{l}</div></div>
+            ))}
+          </div>
+        </div>
+        <div style={{display:"flex",borderTop:`1px solid ${T.border}`,overflowX:"auto"}}>
+          {[{id:"workout",label:ar?"💪 التمارين":"💪 Workout"},{id:"nutrition",label:ar?"🥗 التغذية":"🥗 Nutrition"},{id:"progress",label:ar?"📊 التطور":"📊 Progress"},{id:"chat",label:ar?"💬 المحادثة":"💬 Chat"}].map(t=>(
+            <button key={t.id} onClick={()=>setTab(t.id)} style={{background:"transparent",border:"none",borderBottom:tab===t.id?`2px solid ${T.gold}`:"2px solid transparent",color:tab===t.id?T.gold:T.sub,padding:"12px 18px",cursor:"pointer",fontSize:14,fontWeight:tab===t.id?700:400,fontFamily:FF,transition:"all 0.15s",whiteSpace:"nowrap",flexShrink:0}}>{t.label}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{padding:"22px 20px"}}>
+
+        {/* ═ WORKOUT ═ */}
+        {tab==="workout"&&(
+          <div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:6,marginBottom:22}}>
+              {SCHEDULE.map((s,i)=>(
+                <div key={i} onClick={()=>setDay(i)}
+                  onMouseEnter={e=>{if(i!==day)e.currentTarget.style.borderColor=s.color;}}
+                  onMouseLeave={e=>{if(i!==day)e.currentTarget.style.borderColor=T.border;}}
+                  style={{background:day===i?`${s.color}18`:T.card,border:`1px solid ${day===i?s.color:T.border}`,borderRadius:9,padding:"8px 3px",textAlign:"center",cursor:"pointer",transition:"all 0.15s"}}>
+                  <div style={{fontSize:9,color:T.dim,marginBottom:2}}>{ar?DAYS_AR[i]:DAYS_EN[i].slice(0,3)}</div>
+                  <div style={{fontSize:9,fontWeight:700,color:day===i?s.color:T.text,lineHeight:1.3}}>{ar?s.label.split("—")[0].trim():s.labelEn.split(" ")[0]}</div>
+                  {s.type!=="rest"&&<div style={{width:4,height:4,borderRadius:"50%",background:s.color,margin:"4px auto 0"}}/>}
+                </div>
+              ))}
+            </div>
+            {dayExs.length===0?(
+              <div style={{textAlign:"center",padding:"50px 20px",color:T.sub}}>
+                <div style={{fontSize:52,marginBottom:12}}>🛌</div>
+                <div style={{fontSize:19,fontWeight:900,color:T.text,marginBottom:7}}>{ar?"يوم راحة":"Rest Day"}</div>
+                <div style={{fontSize:13}}>{ar?"التعافي أساس التطور":"Recovery is where growth happens"}</div>
+              </div>
+            ):(
+              <div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:13}}>
+                  <h3 style={{margin:0,fontSize:16,fontWeight:900}}>{ar?SCHEDULE[day].label:SCHEDULE[day].labelEn}</h3>
+                  <span style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:20,padding:"3px 10px",fontSize:11,color:T.sub}}>{dayExs.length} {ar?"تمارين":"exercises"}</span>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:9}}>
+                  {dayExs.map((ex,i)=>(
+                    <div key={i} onClick={()=>setVideo(ex)}
+                      onMouseEnter={e=>{e.currentTarget.style.borderColor=SCHEDULE[day].color;}}
+                      onMouseLeave={e=>{e.currentTarget.style.borderColor=T.border;}}
+                      style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:11,padding:"13px 15px",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",transition:"all 0.15s",gap:10}}>
+                      <div style={{display:"flex",gap:11,alignItems:"center",flex:1}}>
+                        <div style={{width:38,height:38,background:`${SCHEDULE[day].color}18`,border:`1px solid ${SCHEDULE[day].color}40`,borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,color:SCHEDULE[day].color,fontSize:15}}>▶</div>
+                        <div>
+                          <div style={{fontWeight:700,fontSize:13}}>{ar?ex.name:ex.nameEn}</div>
+                          <div style={{fontSize:11,color:T.sub,marginTop:2}}>{ex.muscle}</div>
+                        </div>
+                      </div>
+                      <div style={{display:"flex",gap:12,flexShrink:0}}>
+                        {[[ar?"سيت":"Sets",ex.sets,SCHEDULE[day].color],[ar?"تكرار":"Reps",ex.reps,T.text],[ar?"راحة":"Rest",ex.rest,T.sub]].map(([l,v,c],j)=>(
+                          <div key={j} style={{textAlign:"center"}}>
+                            <div style={{fontWeight:800,color:c,fontSize:12}}>{v}</div>
+                            <div style={{fontSize:9,color:T.dim}}>{l}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ═ NUTRITION ═ */}
+        {tab==="nutrition"&&(
+          <div>
+            <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:13,padding:16,marginBottom:14,display:"flex",justifyContent:"space-around",flexWrap:"wrap",gap:8}}>
+              {[[ar?"إجمالي":"Total",`${totalCal}`,T.gold,"kcal"],[ar?"بروتين":"Protein",`${totalP}`,T.red,"g"],[ar?"كارب":"Carbs",`${totalC}`,T.blue,"g"],[ar?"دهون":"Fat",`${totalF}`,T.green,"g"]].map(([l,v,c,u],i)=>(
+                <div key={i} style={{textAlign:"center"}}>
+                  <div style={{fontSize:i===0?24:18,fontWeight:900,color:c}}>{v} <span style={{fontSize:11,fontWeight:400,color:T.dim}}>{u}</span></div>
+                  <div style={{fontSize:11,color:T.sub}}>{l}</div>
+                </div>
+              ))}
+            </div>
+            {Object.entries(MEAL_PLANS).map(([mk,md])=>{
+              const idx=mealOpts[mk]||0, sel=md.options[idx];
+              return(
+                <div key={mk} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:13,padding:17,marginBottom:13}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                    <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                      <span style={{fontSize:24}}>{md.icon}</span>
+                      <div>
+                        <div style={{fontWeight:900,fontSize:14}}>{mk}</div>
+                        <div style={{fontSize:11,color:T.sub,marginTop:1}}>{sel.cal} kcal</div>
+                      </div>
+                    </div>
+                    {sel.url&&(
+                      <button onClick={()=>setVideo({name:sel.name,nameEn:sel.nameEn,url:sel.url})}
+                        style={{background:T.goldBg,color:T.gold,border:`1px solid ${T.gold}40`,borderRadius:7,padding:"6px 13px",cursor:"pointer",fontSize:12,fontWeight:800,fontFamily:FF,display:"flex",alignItems:"center",gap:4}}>
+                        ▶ {ar?"طريقة التحضير":"How to Prep"}
+                      </button>
+                    )}
+                  </div>
+                  {md.options.length>1&&(
+                    <div style={{display:"flex",gap:6,marginBottom:12}}>
+                      {md.options.map((_,i)=>(
+                        <button key={i} onClick={()=>setMealOpts(p=>({...p,[mk]:i}))}
+                          style={{...OB(idx===i),fontSize:12,padding:"4px 11px",flex:1}}>
+                          {ar?`خيار ${i+1}`:`Option ${i+1}`}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{fontWeight:700,fontSize:13,marginBottom:8}}>{ar?sel.name:sel.nameEn}</div>
+                  <div style={{display:"flex",gap:6,marginBottom:11,flexWrap:"wrap"}}>
+                    {[["بروتين","Protein",sel.p,"g","#E74C3C","rgba(231,76,60,0.12)"],["كارب","Carbs",sel.c,"g","#3B8BEB","rgba(59,139,235,0.12)"],["دهون","Fat",sel.f,"g","#2ECC71","rgba(46,204,113,0.12)"]].map(([la,le,v,u,c,bg],i)=>(
+                      <span key={i} style={{background:bg,color:c,padding:"3px 9px",borderRadius:99,border:`1px solid ${c}30`,fontSize:11}}>{ar?la:le}: {v}{u}</span>
+                    ))}
+                  </div>
+                  <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                    {sel.items.map((item,i)=>(
+                      <span key={i} style={{background:T.surf,border:`1px solid ${T.border}`,borderRadius:5,padding:"2px 8px",fontSize:11,color:T.sub}}>{item}</span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ═ PROGRESS ═ */}
+        {tab==="progress"&&(
+          <div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(135px,1fr))",gap:10,marginBottom:20}}>
+              {[[ar?"الوزن الحالي":"Current Weight",`${latest.weight} kg`,T.gold],[ar?"مجموع الفقد":"Total Lost",`${(progress[0].weight-latest.weight).toFixed(1)} kg`,T.green],[ar?"الصدر":"Chest",`${latest.chest} cm`,T.blue],[ar?"الخصر":"Waist",`${latest.waist} cm`,T.purple]].map(([l,v,c],i)=>(
+                <div key={i} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:11,padding:"14px 13px"}}>
+                  <div style={{fontSize:20,fontWeight:900,color:c}}>{v}</div>
+                  <div style={{fontSize:10,color:T.sub,marginTop:3}}>{l}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:13,padding:"16px 13px",marginBottom:14}}>
+              <h3 style={{margin:"0 0 14px",fontSize:14,fontWeight:800}}>{ar?"منحنى الوزن":"Weight Curve"}</h3>
+              <ResponsiveContainer width="100%" height={190}>
+                <AreaChart data={progress} margin={{top:5,right:10,left:-22,bottom:5}}>
+                  <defs><linearGradient id="gw" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={T.gold} stopOpacity={0.3}/><stop offset="95%" stopColor={T.gold} stopOpacity={0}/></linearGradient></defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={T.border}/>
+                  <XAxis dataKey="date" stroke={T.dim} tick={{fontSize:9,fill:T.sub}}/>
+                  <YAxis stroke={T.dim} tick={{fontSize:9,fill:T.sub}} domain={["auto","auto"]}/>
+                  <Tooltip contentStyle={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,fontSize:12,color:T.text}}/>
+                  <Area type="monotone" dataKey="weight" stroke={T.gold} strokeWidth={2.5} fill="url(#gw)" dot={{fill:T.gold,r:4,strokeWidth:0}}/>
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:13,padding:"16px 13px",marginBottom:14}}>
+              <h3 style={{margin:"0 0 14px",fontSize:14,fontWeight:800}}>{ar?"المقاسات":"Measurements"}</h3>
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={progress} margin={{top:5,right:10,left:-22,bottom:5}}>
+                  <defs><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={T.green} stopOpacity={0.2}/><stop offset="95%" stopColor={T.green} stopOpacity={0}/></linearGradient></defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={T.border}/>
+                  <XAxis dataKey="date" stroke={T.dim} tick={{fontSize:9,fill:T.sub}}/>
+                  <YAxis stroke={T.dim} tick={{fontSize:9,fill:T.sub}} domain={["auto","auto"]}/>
+                  <Tooltip contentStyle={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,fontSize:12,color:T.text}}/>
+                  <Area type="monotone" dataKey="waist" stroke={T.green}  strokeWidth={2} fill="url(#gg)" dot={{fill:T.green, r:3,strokeWidth:0}}/>
+                  <Area type="monotone" dataKey="chest" stroke={T.purple} strokeWidth={2} fill="none"     dot={{fill:T.purple,r:3,strokeWidth:0}}/>
+                </AreaChart>
+              </ResponsiveContainer>
+              <div style={{display:"flex",gap:12,marginTop:8,fontSize:11}}>
+                <span style={{color:T.green}}>● {ar?"خصر":"Waist"}</span>
+                <span style={{color:T.purple}}>● {ar?"صدر":"Chest"}</span>
+              </div>
+            </div>
+            <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:13,padding:17,marginBottom:14,overflowX:"auto"}}>
+              <h3 style={{margin:"0 0 11px",fontSize:14,fontWeight:800}}>{ar?"سجل القياسات":"Log"}</h3>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                <thead><tr style={{color:T.sub}}>{[ar?"التاريخ":"Date",ar?"الوزن":"Weight",ar?"الصدر":"Chest",ar?"الخصر":"Waist"].map((h,i)=><th key={i} style={{textAlign:"center",paddingBottom:8,fontWeight:700,borderBottom:`1px solid ${T.border}`}}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {[...progress].reverse().map((r,i)=>(
+                    <tr key={i} style={{borderBottom:`1px solid ${T.border}`}}>
+                      <td style={{padding:"7px 0",textAlign:"center",color:T.sub,fontSize:11}}>{r.date}</td>
+                      <td style={{padding:"7px 0",textAlign:"center",fontWeight:700,color:T.gold}}>{r.weight}</td>
+                      <td style={{padding:"7px 0",textAlign:"center",color:T.purple}}>{r.chest}</td>
+                      <td style={{padding:"7px 0",textAlign:"center",color:T.green}}>{r.waist}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:13,padding:17}}>
+              <h3 style={{margin:"0 0 14px",fontSize:14,fontWeight:800}}>{ar?"إضافة قياس جديد":"Add Measurement"}</h3>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:10,marginBottom:13}}>
+                {[{k:"weight",l:ar?"الوزن (kg)":"Weight (kg)"},{k:"chest",l:ar?"الصدر (cm)":"Chest (cm)"},{k:"waist",l:ar?"الخصر (cm)":"Waist (cm)"}].map(f=>(
+                  <div key={f.k}>
+                    <label style={{display:"block",fontSize:11,color:T.sub,marginBottom:4}}>{f.l}</label>
+                    <input type="number" value={form[f.k]} onChange={e=>setForm(p=>({...p,[f.k]:e.target.value}))} placeholder="0.0"
+                      onFocus={e=>{e.target.style.borderColor=T.gold;e.target.style.outline="none";}}
+                      onBlur={e=>{e.target.style.borderColor=T.border;}}
+                      style={{width:"100%",background:T.surf,border:`1px solid ${T.border}`,borderRadius:7,padding:"8px 10px",color:T.text,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:FF,transition:"border-color 0.15s"}}/>
+                  </div>
+                ))}
+              </div>
+              <button onClick={()=>{
+                if(!form.weight) return;
+                const d=new Date(),prev=progress[progress.length-1];
+                setProgress(p=>[...p,{date:`${d.getDate()} ${MONTHS_AR[d.getMonth()]}`,weight:parseFloat(form.weight)||prev.weight,chest:parseFloat(form.chest)||prev.chest,waist:parseFloat(form.waist)||prev.waist}]);
+                setForm({weight:"",chest:"",waist:""});
+              }} style={{background:T.gold,color:"#000",border:"none",borderRadius:9,padding:"9px 24px",cursor:"pointer",fontSize:13,fontWeight:900,fontFamily:FF}}>
+                {ar?"حفظ ✓":"Save ✓"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ═ CHAT ═ */}
+        {tab==="chat"&&(
+          <div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 270px)",minHeight:380}}>
+            <div style={{display:"flex",gap:8,marginBottom:13,flexWrap:"wrap"}}>
+              <a href={`https://wa.me/${WA_NUM}`} target="_blank" rel="noreferrer"
+                style={{background:"rgba(37,211,102,0.12)",color:"#25D366",border:"1px solid rgba(37,211,102,0.3)",borderRadius:7,padding:"7px 13px",fontSize:12,fontWeight:700,fontFamily:FF,textDecoration:"none"}}>
+                📲 {ar?"واتساب المدرب":"Coach WhatsApp"}
+              </a>
+              <a href={`viber://chat?number=${WA_NUM}`} target="_blank" rel="noreferrer"
+                style={{background:"rgba(115,96,242,0.12)",color:"#9B6BF2",border:"1px solid rgba(115,96,242,0.3)",borderRadius:7,padding:"7px 13px",fontSize:12,fontWeight:700,fontFamily:FF,textDecoration:"none"}}>
+                📳 {ar?"فايبر":"Viber"}
+              </a>
+            </div>
+            <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:10,paddingBottom:8}}>
+              {msgs.map((m,i)=>{
+                const isCoach=m.from==="coach";
+                return(
+                  <div key={i} style={{display:"flex",justifyContent:isCoach?(ar?"flex-start":"flex-end"):(ar?"flex-end":"flex-start")}}>
+                    <div style={{maxWidth:"78%"}}>
+                      {isCoach&&<div style={{fontSize:10,color:T.sub,marginBottom:2,paddingLeft:3,fontWeight:700}}>🏋️ {ar?"المدرب":"Coach"}</div>}
+                      <div style={{background:isCoach?T.card:`${T.gold}18`,border:`1px solid ${isCoach?T.border:T.gold+"40"}`,borderRadius:11,padding:"9px 13px",fontSize:13,lineHeight:1.6,color:isCoach?T.text:T.gold}}>
+                        {m.text}
+                      </div>
+                      <div style={{fontSize:9,color:T.dim,marginTop:2,textAlign:isCoach?"left":"right"}}>{m.time}</div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={chatEnd}/>
+            </div>
+            <div style={{display:"flex",gap:7,marginTop:9,paddingTop:11,borderTop:`1px solid ${T.border}`}}>
+              <input value={msgIn} onChange={e=>setMsgIn(e.target.value)}
+                onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}}}
+                placeholder={ar?"اكتب رسالتك للمدرب...":"Message your coach..."}
+                style={{flex:1,background:T.card,border:`1px solid ${T.border}`,borderRadius:9,padding:"10px 13px",color:T.text,fontSize:13,fontFamily:FF,outline:"none",transition:"border-color 0.15s"}}
+                onFocus={e=>e.target.style.borderColor=T.gold}
+                onBlur={e=>e.target.style.borderColor=T.border}
+              />
+              <button onClick={sendMsg} style={{background:T.gold,border:"none",borderRadius:9,padding:"0 16px",cursor:"pointer",color:"#000",fontSize:18,fontWeight:900,minWidth:44}}>→</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+export default T;
